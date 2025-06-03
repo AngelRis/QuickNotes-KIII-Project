@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @Builder
 @Table(name = "users")
-
+@ToString(exclude = "notes")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

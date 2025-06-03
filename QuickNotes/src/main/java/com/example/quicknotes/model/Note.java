@@ -11,6 +11,7 @@ import lombok.*;
 @Getter
 @Setter
 @Table(name = "notes")
+@ToString(exclude = "user")
 public class Note {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

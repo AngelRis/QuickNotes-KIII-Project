@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+  mysqldb:
+    image: mysql:8.0
+    container_name: mysqldb
+    environment:
+      MYSQL_DATABASE: quick_notes
+      MYSQL_ROOT_PASSWORD: Test123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - quicknotes-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  backend:
+    image: angelristeski2/quicknotes-backend:latest
+    container_name: quicknotes-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/quick_notes?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Test123
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    networks:
+      - quicknotes-network
+
+  frontend:
+    image: angelristeski2/quicknotes-frontend:latest
+    container_name: quicknotes-frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend
+    networks:
+      - quicknotes-network
+
+volumes:
+  mysql-data:
+
+networks:
+  quicknotes-network:
+    driver: bridge
