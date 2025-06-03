@@ -11,9 +11,27 @@ env:
   BACKEND_IMAGE: angelristeski2/quicknotes-backend
 
 jobs:
-  build-and-push:
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'quick_notes_frontend/**'
+            backend:
+              - 'QuickNotes/**'
 
+  build-and-push-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -26,22 +44,30 @@ jobs:
 
       - name: Build Frontend Image
         working-directory: ./quick_notes_frontend
-        run: |
-          docker build -t $FRONTEND_IMAGE:latest .
-
-      - name: Build Backend Image
-        working-directory: ./QuickNotes
-        run: |
-          docker build -t $BACKEND_IMAGE:latest .
+        run: docker build -t $FRONTEND_IMAGE:latest .
 
       - name: Push Frontend Image
         if: github.event_name == 'push'
-        working-directory: ./quick_notes_frontend
-        run: |
-          docker push $FRONTEND_IMAGE:latest
+        run: docker push $FRONTEND_IMAGE:latest
+
+  build-and-push-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Backend Image
+        working-directory: ./QuickNotes
+        run: docker build -t $BACKEND_IMAGE:latest .
 
       - name: Push Backend Image
         if: github.event_name == 'push'
-        working-directory: ./QuickNotes
-        run: |
-          docker push $BACKEND_IMAGE:latest
+        run: docker push $BACKEND_IMAGE:latest
