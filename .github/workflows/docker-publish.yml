@@ -1,0 +1,47 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  FRONTEND_IMAGE: angelristeski2/quicknotes-frontend
+  BACKEND_IMAGE: angelristeski2/quicknotes-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Frontend Image
+        working-directory: ./quick_notes_frontend
+        run: |
+          docker build -t $FRONTEND_IMAGE:latest .
+
+      - name: Build Backend Image
+        working-directory: ./QuickNotes
+        run: |
+          docker build -t $BACKEND_IMAGE:latest .
+
+      - name: Push Frontend Image
+        if: github.event_name == 'push'
+        working-directory: ./quick_notes_frontend
+        run: |
+          docker push $FRONTEND_IMAGE:latest
+
+      - name: Push Backend Image
+        if: github.event_name == 'push'
+        working-directory: ./QuickNotes
+        run: |
+          docker push $BACKEND_IMAGE:latest
